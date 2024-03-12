@@ -1,7 +1,7 @@
 ﻿using RestSharp;
 using System.Text.Json;
 
-namespace KTTexasAPI
+namespace AmazonAPI
 {
     public class GetAccessTokenClass
     {

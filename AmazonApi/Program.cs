@@ -1,4 +1,6 @@
-﻿using KTTexasAPI;
+﻿
+
+using AmazonAPI;
 
 namespace AmazonApi
 {   
@@ -7,9 +9,37 @@ namespace AmazonApi
         static HttpClient client = new HttpClient();
         static async Task Main(string[] args)
         {
-          string token = GetAccessTokenClass.getAccessToken();
-          //Atza|IwEBIBnYeVKkzB_8fwO4bGV7OyB2q5UV3nOyznPmbgyWantee-wFOEy0-Ji0MOdGnaMjgIqFUBY_ZGQgTriwv9k6Ru9F2JoinkvkaSaFJ9u6FfXriYRYekcwWxKOOn51KpglFfGTQPyGOxr8sBnFUcqxfFGVOvd1NO21J757HcCl47rwRUOpqnK3nixbnsh0rQ_RsY9p2Pl7yxAdrkMfdzNOclbWaH_TNOUutLaRaLNzafPGapXyh2UQjcbYyoUxygCBN4dcjHP3LN0-8HnQwk5OukB1gN6bDCHjAdM-3BNVAnVtXXdBzSVfZcnEHjq9euz8522l0p3e4uc0sfVB4o5LCTIeN07q6u07NQk0b5uNFlUZmg
-           GetOrdersClass.GetOrders(token);
+          CancellationToken cancellationToken = CancellationToken.None;
+          int min;
+          int hour;
+           while (true)
+            {
+              await Task.Delay(59000, cancellationToken);
+              min = UtilityMethods.IsraelDateTime().TimeOfDay.Minutes;
+              hour = UtilityMethods.IsraelDateTime().TimeOfDay.Hours;
+                    if (min != 0 || hour != 8)
+                        continue;
+            Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
+            
+
+            string createdAfter =  DateTime.UtcNow.AddDays(-1).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            string createdBefore = DateTime.UtcNow.AddHours(-1).AddMinutes(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            string invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
+                             AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+              //token:
+             string token = GetAccessTokenClass.getAccessToken();
+
+              //orders:
+               GetOrdersClass.GetOrders(token, SD.USMarketplace,createdAfter,createdBefore);//US
+              GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+             
+
+              // inventory: 
+              GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
+              GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
+              Console.WriteLine("End at " + UtilityMethods.IsraelDateTime());
+             }//end while loop
+
           }
      }
 }

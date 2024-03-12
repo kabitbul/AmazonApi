@@ -1,4 +1,4 @@
-﻿namespace KTTexasAPI
+﻿namespace AmazonAPI
 {
     public class AccessToken
     {
