@@ -1,12 +1,17 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Data.SqlClient;
+using Serilog;
 
 namespace AmazonAPI
 {
     public class UtilityMethods
     {
-      
+      private static readonly string logFilePath = @"C:\Logs\Amazon\WindowsServiceLog.txt";
+      private static readonly ILogger log = new LoggerConfiguration()
+        .WriteTo.File(logFilePath,rollingInterval: RollingInterval.Day,retainedFileCountLimit: 30,
+                      outputTemplate: "{Timestamp:dd/MM/yyyy HH:mm:ss} {Level}: {Message}{NewLine}")
+        .CreateLogger();
 //get dateTime for Israel
         public static DateTime IsraelDateTime()
         {
@@ -15,6 +20,11 @@ namespace AmazonAPI
        public static DateTime PDTDateTime(DateTime date)
        {
           return TimeZoneInfo.ConvertTime(date, 
+                              TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"));
+        } 
+public static DateTime CurrentPDTDateTime()
+       {
+          return TimeZoneInfo.ConvertTime(DateTime.Now, 
                               TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"));
         } 
 
@@ -39,6 +49,20 @@ public static void WriteToLog(string msg)
                 if (con2.State == ConnectionState.Open)
                     con2.Close();
                 Console.WriteLine("error in InsertToNotificationTable of CheckStatusAddNotifications " + ex.Message);
+            }
+        }
+public static void WriteToTextLog(string message, string type)
+        {
+          try
+          {
+             if (type == "INF")
+               log.Information(message);
+             else if (type == "ERR")
+               log.Error(message);
+          }
+           catch (Exception ex)
+            {
+              log.Error("Error writing log: {ErrorMessage}", ex.Message);
             }
         }
 public static void WriteToLogSuccess(string msg)

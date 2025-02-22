@@ -32,8 +32,8 @@ namespace AmazonAPI
          RestResponse response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
         if(response.StatusCode != System.Net.HttpStatusCode.OK)
            {
-                UtilityMethods.WriteToLog(
-                "GetOrders returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                UtilityMethods.WriteToTextLog(
+                "GetOrders returned status " + response.StatusCode +"-","ERR");
                 Console.WriteLine
                 ("GetOrders e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                 return null;
@@ -58,8 +58,8 @@ namespace AmazonAPI
                     response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
                     if(response.StatusCode != System.Net.HttpStatusCode.OK)
                      {
-                      UtilityMethods.WriteToLog(
-                      "GetOrders2 returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                      UtilityMethods.WriteToTextLog(
+                      "GetOrders2 returned status " + response.StatusCode , "ERR");
                       Console.WriteLine
                       ("GetOrders2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                        return null;
@@ -80,28 +80,67 @@ namespace AmazonAPI
            foreach(JObject obj in ordersArray)
            {
              string amazonOrderId = (string)obj["AmazonOrderId"];
-             
-             Console.WriteLine(++i + "-"+amazonOrderId);
-             DateTime purchaseDate = (DateTime)obj["PurchaseDate"];
-             string marketPlace = "";
-              if ((string)obj["MarketplaceId"] == "A2EUQ1WTGCTBG2")
-               marketPlace = "CA";
+              bool existOrd = ExistOrder(amazonOrderId);
+             if(existOrd)
+               {
+               Console.WriteLine(amazonOrderId + "exsits in KT");
+               UtilityMethods.WriteToTextLog(amazonOrderId + "exsits in KT", "INF");
+               }
+             else{ 
+               //Console.WriteLine(++i + "-"+amazonOrderId);
+               DateTime purchaseDate = (DateTime)obj["PurchaseDate"];
+               string marketPlace = "";
+               if ((string)obj["MarketplaceId"] == "A2EUQ1WTGCTBG2")
+                marketPlace = "CA";
                     else
                marketPlace = "US";
              bool isFBA =false;
                if ((string)obj["FulfillmentChannel"] == "AFN") //FBA only
-                   GetOrderItem(token, amazonOrderId,marketPlace,purchaseDate);
+                  {
+                    GetOrderItem(token, amazonOrderId,marketPlace,purchaseDate);
+                    }
             }
+              }
              return true;
            }
           catch{
-          UtilityMethods.WriteToLog(
-                    "EXCEPTION in loopOrders-" + UtilityMethods.IsraelDateTime());
+          UtilityMethods.WriteToTextLog(
+                    "EXCEPTION in loopOrders-" ,"ERR");
                     Console.WriteLine
                     ("EXCEPTION in loopOrders-" + UtilityMethods.IsraelDateTime());
                     return false;
             }
       }
+public static bool ExistOrder(string amazonOrderId)
+{
+   SqlConnection con = new SqlConnection(SD.connectionStr);
+            string sql = "SELECT 1 FROM [dbo].AmazonOrders " +
+"                         WHERE AmazonOrdId = @AMZORD";
+            try
+            {
+                con.Open();
+                
+                SqlCommand cmd = new SqlCommand(sql, con);
+              cmd.Parameters.Add("@AMZORD", SqlDbType.VarChar, 20).Value = amazonOrderId;
+                 SqlDataReader reader = cmd.ExecuteReader();
+                
+              while (reader.Read())
+                {
+                 con.Close();
+                 return true;
+                }
+                con.Close();
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception in ExistInAsinToSku: "+ex.Message);
+                if (con.State == ConnectionState.Open)
+                    con.Close();
+                return false;
+            }
+}
 public static  string GetOrderItem(string token, string orderId, string marketPlace,DateTime purchaseDate)
       {
        try{ 
@@ -119,8 +158,8 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
          RestResponse response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
          if(response.StatusCode != System.Net.HttpStatusCode.OK)
                  {
-                    UtilityMethods.WriteToLog(
-                    "GetOrderItem returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                    UtilityMethods.WriteToTextLog(
+                    "GetOrderItem returned status " + response.StatusCode +"-","ERR");
                     Console.WriteLine
                     ("GetOrderItem e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                     return null;
@@ -142,10 +181,10 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
           }
         }
         catch{
-          UtilityMethods.WriteToLog(
-                    "EXCEPTION in GetOrderItem-" + UtilityMethods.IsraelDateTime());
+          UtilityMethods.WriteToTextLog(
+                    "EXCEPTION in GetOrderItem-orderId " + orderId,"ERR" );
                     Console.WriteLine
-                    ("EXCEPTION in GetOrderItem-" + UtilityMethods.IsraelDateTime());
+                    ("EXCEPTION in GetOrderItem-orderId " + orderId +" "+ UtilityMethods.IsraelDateTime());
                     return "";
             }
         }
@@ -177,16 +216,21 @@ public static void AddOrderToKT(string orderId, string marketPlace,DateTime purc
        if(effectedRows != 1)
           {
              Console.WriteLine("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin);
-            UtilityMethods.WriteToLog("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin);
+            UtilityMethods.WriteToTextLog("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin,"ERR");
           }
+      else
+       {
+        Console.WriteLine("Added Order "+orderId+" From MarketPlace " + marketPlace+" purchase date " +purchaseDate);
+        UtilityMethods.WriteToTextLog("Added Order "+orderId+" From MarketPlace " + marketPlace+" purchase date " +purchaseDate,"INF");
+       }
       }
    catch(Exception e)
             {
-   UtilityMethods.WriteToLog("Exception on AddOrderToKT with asin " + asin+ "-" + UtilityMethods.IsraelDateTime());
+   UtilityMethods.WriteToTextLog("Exception on AddOrderToKT with asin " + asin+ "-" ,"ERR");
                 Console.WriteLine("Exception on AddOrderToKT with asin "  + asin+ "-" + UtilityMethods.IsraelDateTime());
                 if (con.State == ConnectionState.Open)
                     con.Close();
-   UtilityMethods.WriteToLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999));
+   UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
 }
 }
 }

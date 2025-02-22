@@ -12,32 +12,61 @@ namespace AmazonApi
           CancellationToken cancellationToken = CancellationToken.None;
           int min;
           int hour;
+          string token = "";
+
            while (true)
-            {
-              await Task.Delay(59000, cancellationToken);
+             {
+              await Task.Delay(58000, cancellationToken);
               min = UtilityMethods.IsraelDateTime().TimeOfDay.Minutes;
               hour = UtilityMethods.IsraelDateTime().TimeOfDay.Hours;
-                    if (min != 0 || hour != 8)
-                        continue;
-            Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
+            //Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
             
 
-            string createdAfter =  DateTime.UtcNow.AddDays(-1).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            string createdBefore = DateTime.UtcNow.AddHours(-1).AddMinutes(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            string createdAfter =  DateTime.UtcNow.AddHours(-2).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            string createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
             string invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
                              AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
-              //token:
-             string token = GetAccessTokenClass.getAccessToken();
-
-              //orders:
-               GetOrdersClass.GetOrders(token, SD.USMarketplace,createdAfter,createdBefore);//US
-              GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+            
+            
+              if(min == 0)
+              {
+                token = "";
+                //token:
+                token = GetAccessTokenClass.getAccessToken();
+                if(token == null || token == "")
+                {
+                  Console.WriteLine("token returned null");
+                  UtilityMethods.WriteToTextLog("token returned null", "ERR");
+                 }
+                else
+                 { 
+                   //orders:
+                   GetOrdersClass.GetOrders(token, SD.USMarketplace,createdAfter,createdBefore);//US
+                   GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+                 }
+               }
              
-
-              // inventory: 
-              GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
-              GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
-              Console.WriteLine("End at " + UtilityMethods.IsraelDateTime());
+              if (hour == 20 && min == 30)
+               { 
+                  token = "";
+                  //token:
+                  token = GetAccessTokenClass.getAccessToken();
+                  if(token == null || token == "")
+                   {
+                       Console.WriteLine("token returned null");
+                       UtilityMethods.WriteToTextLog("token returned null", "ERR");
+                   }
+                  else
+                  {
+                      // inventory: 
+                      UtilityMethods.WriteToTextLog("starting inventory","INF");
+                      Console.WriteLine("starting inventory");
+                      GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
+                      GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
+                      UtilityMethods.WriteToTextLog("ending inventory","INF");
+                      Console.WriteLine("ending inventory");
+                  }
+               }
              }//end while loop
 
           }

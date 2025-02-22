@@ -34,8 +34,8 @@ namespace AmazonAPI
          RestResponse response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
         if(response.StatusCode != System.Net.HttpStatusCode.OK)
            {
-                UtilityMethods.WriteToLog(
-                "GetInventory returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                UtilityMethods.WriteToTextLog(
+                "GetInventory returned status " + response.StatusCode,"ERR");
                 Console.WriteLine
                 ("GetInventory e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                 return null;
@@ -50,6 +50,7 @@ namespace AmazonAPI
         if(response.Content != null)
           {
            deleteInventoryTable(marketPlace);
+            UtilityMethods.WriteToTextLog("=================START ADD INVENTORY TO " + marketPlace+"=============","INF");
             if (nextToken == null) // there are less then 100 and no paging
              {
               bool result  = loopInventory(JObject.Parse(response.Content),marketPlace);  
@@ -64,8 +65,8 @@ namespace AmazonAPI
                   response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
                   if(response.StatusCode != System.Net.HttpStatusCode.OK)
                    {
-                    UtilityMethods.WriteToLog(
-                    "GetInventory2 returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                    UtilityMethods.WriteToTextLog(
+                    "GetInventory2 returned status " + response.StatusCode ,"ERR");
                     Console.WriteLine
                     ("GetInventory2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                     return null;
@@ -103,11 +104,12 @@ namespace AmazonAPI
             }
              return true;
            }
-          catch{
-          UtilityMethods.WriteToLog(
-                    "EXCEPTION in loopInventory-" + UtilityMethods.IsraelDateTime());
+          catch( Exception e){
+          UtilityMethods.WriteToTextLog(
+                    "EXCEPTION in loopInventory-","ERR");
                     Console.WriteLine
                     ("EXCEPTION in loopInventory-" + UtilityMethods.IsraelDateTime());
+          UtilityMethods.WriteToTextLog(e.Message,"ERR");
                     return false;
             }
       }
@@ -131,12 +133,13 @@ namespace AmazonAPI
                  return true;
                 }
                 con.Close();
-                
+                UtilityMethods.WriteToTextLog("ASIN " + asin + " Needs to be added to table AsinToSku" , "ERR");
+                Console.WriteLine("ASIN " + asin + " Needs to be added to table AsinToSku" );
                 return false;
             }
             catch (Exception ex)
             {
-                UtilityMethods.WriteToLog("Exception in ExistInAsinToSku: "+ex.Message);
+                UtilityMethods.WriteToTextLog("Exception in ExistInAsinToSku: "+ex.Message,"ERR");
                 Console.WriteLine("Exception in ExistInAsinToSku: "+ex.Message);
                 if (con.State == ConnectionState.Open)
                     con.Close();
@@ -172,16 +175,16 @@ public static  void AddInventoryToKT(string asin, int availableQuantity,
        if(effectedRows != 1)
           {
              Console.WriteLine("ERROR AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin);
-            UtilityMethods.WriteToLog("ERROR AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin);
+            UtilityMethods.WriteToTextLog("AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin,"ERR");
           }
       }
    catch(Exception e)
             {
-   UtilityMethods.WriteToLog("Exception on AddInventoryToKT with asin " + asin+ "-" + UtilityMethods.IsraelDateTime());
+   UtilityMethods.WriteToTextLog("Exception on AddInventoryToKT with asin " + asin,"ERR");
                 Console.WriteLine("Exception on AddInventoryToKT with asin "  + asin+ "-" + UtilityMethods.IsraelDateTime());
                 if (con.State == ConnectionState.Open)
                     con.Close();
-   UtilityMethods.WriteToLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999));
+   UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
 }
         }
 public static bool deleteInventoryTable(string marketPlace)
@@ -195,15 +198,17 @@ public static bool deleteInventoryTable(string marketPlace)
                
                 cmd.ExecuteNonQuery();
                 con.Close();
+               UtilityMethods.WriteToTextLog("successfully deleted inventory on KT","INF");
+               Console.WriteLine("successfully deleted inventory on KT");
               return true;
             }
             catch(Exception e)
             {
-                UtilityMethods.WriteToLog("Exception on AmazonInventories " + UtilityMethods.IsraelDateTime());
-                Console.WriteLine("Exception on AmazonInventories " + UtilityMethods.IsraelDateTime());
+                UtilityMethods.WriteToTextLog("Exception on deleteInventoryTable ","ERR");
+                Console.WriteLine("Exception on deleteInventoryTable " + UtilityMethods.IsraelDateTime());
                 if (con.State == ConnectionState.Open)
                     con.Close();  
-               UtilityMethods.WriteToLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999));
+               UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
                return false;
             }
         }
