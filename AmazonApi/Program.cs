@@ -13,18 +13,26 @@ namespace AmazonApi
           int min;
           int hour;
           string token = "";
-
+          string createdAfter ;
+          string createdBefore;
+          string invDate;
+          Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
+          //TTEST//////////////////////////////////////////////////////
+            createdAfter =  DateTime.UtcNow.AddHours(-24).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            token = GetAccessTokenClass.getAccessToken();
+            GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+          //TEST//////////////////////////////////////////////////////
            while (true)
              {
               await Task.Delay(58000, cancellationToken);
               min = UtilityMethods.IsraelDateTime().TimeOfDay.Minutes;
               hour = UtilityMethods.IsraelDateTime().TimeOfDay.Hours;
-            //Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
             
 
-            string createdAfter =  DateTime.UtcNow.AddHours(-2).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            string createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            string invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
+             createdAfter =  DateTime.UtcNow.AddHours(-3).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+             createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+             invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
                              AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
             
             
