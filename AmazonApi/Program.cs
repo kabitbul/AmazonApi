@@ -1,6 +1,8 @@
 ﻿
 
 using AmazonAPI;
+using System.Net.Mail;
+using System.Net;
 
 namespace AmazonApi
 {   
@@ -18,10 +20,14 @@ namespace AmazonApi
           string invDate;
           Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
           //TTEST//////////////////////////////////////////////////////
-            createdAfter =  DateTime.UtcNow.AddHours(-24).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            token = GetAccessTokenClass.getAccessToken();
-            GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+            //createdAfter =  DateTime.UtcNow.AddHours(-24).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //token = GetAccessTokenClass.getAccessToken();
+            //GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+            //invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
+            //                 AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");            
+          // GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
+          //            GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
           //TEST//////////////////////////////////////////////////////
            while (true)
              {

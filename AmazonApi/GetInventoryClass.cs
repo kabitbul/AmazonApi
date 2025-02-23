@@ -3,6 +3,8 @@ using RestSharp;
 using System.Data.SqlClient;
 using System.Data;
 using RestSharp.Serializers.NewtonsoftJson;
+using System.Net.Mail;
+using System.Net;
 
 namespace AmazonAPI
 {
@@ -54,6 +56,14 @@ namespace AmazonAPI
             if (nextToken == null) // there are less then 100 and no paging
              {
               bool result  = loopInventory(JObject.Parse(response.Content),marketPlace);  
+              if (result)
+               {
+                  UtilityMethods.WriteToTextLog("END inventory update successfully","INF");
+                }
+              else
+              {
+                 UtilityMethods.WriteToTextLog("FAILED during inventory update","ERR");
+               }
              }
              else
              {
@@ -78,6 +88,14 @@ namespace AmazonAPI
                }
               //at the end of the loop nextToken is null so we are at the last page
               result  = loopInventory(JObject.Parse(response.Content),marketPlace); 
+              if (result)
+               {
+                  UtilityMethods.WriteToTextLog("END inventory update successfully","INF");
+                }
+              else
+              {
+                 UtilityMethods.WriteToTextLog("FAILED during inventory update","ERR");
+               }
              }
           }
        return "";
@@ -102,6 +120,7 @@ namespace AmazonAPI
                               reservedQuantity, marketPlace);
               
             }
+
              return true;
            }
           catch( Exception e){
@@ -135,6 +154,7 @@ namespace AmazonAPI
                 con.Close();
                 UtilityMethods.WriteToTextLog("ASIN " + asin + " Needs to be added to table AsinToSku" , "ERR");
                 Console.WriteLine("ASIN " + asin + " Needs to be added to table AsinToSku" );
+                SendSkuNeedsEmail(asin);
                 return false;
             }
             catch (Exception ex)
@@ -210,6 +230,40 @@ public static bool deleteInventoryTable(string marketPlace)
                     con.Close();  
                UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
                return false;
+            }
+        }
+//
+private static void SendSkuNeedsEmail(string asin)
+        {
+            try
+            {
+                // Configure your SMTP client settings.
+                // For example, using Gmail's SMTP server.
+                SmtpClient smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", "mqgcejocdvbsmxui"),
+                    EnableSsl = true
+                };
+
+                // Create the email message.
+                MailMessage mailMessage = new MailMessage
+                {
+                    From = new MailAddress("ktonlinemarketing1@gmail.com"),
+                    Subject = "Tomer - Ya Tahat",
+                    Body = "You Forgot to add Asin: " + asin + " To the screen \"Assin By Sku\""
+                };
+
+                // Send the email to yourself.
+                mailMessage.To.Add("ktonlinemarketing1@gmail.com");
+
+                // Send the email.
+                smtpClient.Send(mailMessage);
+            }
+            catch (Exception emailEx)
+            {
+                // If the email fails, write to the console (or log appropriately).
+                Console.WriteLine("Failed to send exception email: " + emailEx.Message);
             }
         }
   
