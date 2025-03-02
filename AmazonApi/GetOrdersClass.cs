@@ -34,6 +34,7 @@ namespace AmazonAPI
            {
                 UtilityMethods.WriteToTextLog(
                 "GetOrders returned status " + response.StatusCode +"-","ERR");
+            UtilityMethods.SendErrMail("GetOrders returned status " + response.StatusCode);
                 Console.WriteLine
                 ("GetOrders e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                 return null;
@@ -60,7 +61,8 @@ namespace AmazonAPI
                      {
                       UtilityMethods.WriteToTextLog(
                       "GetOrders2 returned status " + response.StatusCode , "ERR");
-                      Console.WriteLine
+                UtilityMethods.SendErrMail("GetOrders2 returned status " + response.StatusCode);      
+                Console.WriteLine
                       ("GetOrders2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                        return null;
                      }
@@ -103,11 +105,12 @@ namespace AmazonAPI
               }
              return true;
            }
-          catch{
+          catch (Exception e){
           UtilityMethods.WriteToTextLog(
                     "EXCEPTION in loopOrders-" ,"ERR");
                     Console.WriteLine
                     ("EXCEPTION in loopOrders-" + UtilityMethods.IsraelDateTime());
+                 UtilityMethods.SendErrMail("EXCEPTION in loopOrders " + e.Message);
                     return false;
             }
       }
@@ -160,7 +163,8 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
                  {
                     UtilityMethods.WriteToTextLog(
                     "GetOrderItem returned status " + response.StatusCode +"-","ERR");
-                    Console.WriteLine
+      UtilityMethods.SendErrMail("GetOrderItem returned status " + response.StatusCode);             
+      Console.WriteLine
                     ("GetOrderItem e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                     return null;
                }
@@ -183,7 +187,8 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
         catch{
           UtilityMethods.WriteToTextLog(
                     "EXCEPTION in GetOrderItem-orderId " + orderId,"ERR" );
-                    Console.WriteLine
+           UtilityMethods.SendErrMail("EXCEPTION in GetOrderItem-orderId " + orderId);         
+           Console.WriteLine
                     ("EXCEPTION in GetOrderItem-orderId " + orderId +" "+ UtilityMethods.IsraelDateTime());
                     return "";
             }
@@ -217,6 +222,7 @@ public static void AddOrderToKT(string orderId, string marketPlace,DateTime purc
           {
              Console.WriteLine("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin);
             UtilityMethods.WriteToTextLog("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin,"ERR");
+ UtilityMethods.SendErrMail("ERROR- effected rows are " + effectedRows + " while adding order with asin " + asin);
           }
       else
        {
@@ -231,6 +237,7 @@ public static void AddOrderToKT(string orderId, string marketPlace,DateTime purc
                 if (con.State == ConnectionState.Open)
                     con.Close();
    UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
+UtilityMethods.SendErrMail("Exception on AddOrderToKT with asin " + asin );
 }
 }
 }

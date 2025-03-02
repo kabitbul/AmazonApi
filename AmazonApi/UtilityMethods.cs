@@ -2,6 +2,8 @@
 using System.Data;
 using System.Data.SqlClient;
 using Serilog;
+using System.Net.Mail;
+using System.Net;
 
 namespace AmazonAPI
 {
@@ -98,6 +100,39 @@ public static void WriteToLogSuccess(string msg)
             if (!reader.IsDBNull(colIndex))
                 return reader.GetDateTime(colIndex);
             return null;
+        }
+public static void SendErrMail(string excep)
+        {
+            try
+            {
+                // Configure your SMTP client settings.
+                // For example, using Gmail's SMTP server.
+                SmtpClient smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", "mqgcejocdvbsmxui"),
+                    EnableSsl = true
+                };
+
+                // Create the email message.
+                MailMessage mailMessage = new MailMessage
+                {
+                    From = new MailAddress("ktonlinemarketing1@gmail.com"),
+                    Subject = "Error on API-SP",
+                    Body = excep
+                };
+
+                // Send the email to yourself.
+                mailMessage.To.Add("ktonlinemarketing1@gmail.com");
+
+                // Send the email.
+                smtpClient.Send(mailMessage);
+            }
+            catch (Exception emailEx)
+            {
+                // If the email fails, write to the console (or log appropriately).
+                Console.WriteLine("Failed to send exception email: " + emailEx.Message);
+            }
         }
     }
 }

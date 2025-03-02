@@ -19,15 +19,16 @@ namespace AmazonApi
           string createdBefore;
           string invDate;
           Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
+//token = GetAccessTokenClass.getAccessToken();
           //TTEST//////////////////////////////////////////////////////
-            //createdAfter =  DateTime.UtcNow.AddHours(-24).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            //createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-            //token = GetAccessTokenClass.getAccessToken();
-            //GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
-            //invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
-            //                 AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");            
-          // GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
-          //            GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
+      //      createdAfter =  DateTime.UtcNow.AddHours(-72).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+    //        createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+     //       token = GetAccessTokenClass.getAccessToken();
+//invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-1).
+  //                           AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+  //          GetOrdersClass.GetOrders(token, SD.CAMarketplace,createdAfter,createdBefore);//CA
+         //  GetInventoryClass.GetInventory(token,SD.USMarketplace,invDate);
+            //          GetInventoryClass.GetInventory(token,SD.CAMarketplace,invDate);
           //TEST//////////////////////////////////////////////////////
            while (true)
              {
@@ -51,6 +52,7 @@ namespace AmazonApi
                 {
                   Console.WriteLine("token returned null");
                   UtilityMethods.WriteToTextLog("token returned null", "ERR");
+                  UtilityMethods.SendErrMail("token returned null");
                  }
                 else
                  { 
@@ -69,6 +71,7 @@ namespace AmazonApi
                    {
                        Console.WriteLine("token returned null");
                        UtilityMethods.WriteToTextLog("token returned null", "ERR");
+ UtilityMethods.SendErrMail("token returned null");
                    }
                   else
                   {

@@ -38,6 +38,7 @@ namespace AmazonAPI
            {
                 UtilityMethods.WriteToTextLog(
                 "GetInventory returned status " + response.StatusCode,"ERR");
+                 UtilityMethods.SendErrMail("GetInventory returned status " + response.StatusCode);
                 Console.WriteLine
                 ("GetInventory e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                 return null;
@@ -63,6 +64,7 @@ namespace AmazonAPI
               else
               {
                  UtilityMethods.WriteToTextLog("FAILED during inventory update","ERR");
+               UtilityMethods.SendErrMail("FAILED during inventory update");
                }
              }
              else
@@ -77,6 +79,7 @@ namespace AmazonAPI
                    {
                     UtilityMethods.WriteToTextLog(
                     "GetInventory2 returned status " + response.StatusCode ,"ERR");
+                  UtilityMethods.SendErrMail("GetInventory2 returned status " + response.StatusCode);
                     Console.WriteLine
                     ("GetInventory2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                     return null;
@@ -95,7 +98,8 @@ namespace AmazonAPI
               else
               {
                  UtilityMethods.WriteToTextLog("FAILED during inventory update","ERR");
-               }
+               UtilityMethods.SendErrMail("FAILED during inventory update");
+                }
              }
           }
        return "";
@@ -126,6 +130,7 @@ namespace AmazonAPI
           catch( Exception e){
           UtilityMethods.WriteToTextLog(
                     "EXCEPTION in loopInventory-","ERR");
+UtilityMethods.SendErrMail("EXCEPTION in loopInventory" + e.Message);
                     Console.WriteLine
                     ("EXCEPTION in loopInventory-" + UtilityMethods.IsraelDateTime());
           UtilityMethods.WriteToTextLog(e.Message,"ERR");
@@ -160,6 +165,7 @@ namespace AmazonAPI
             catch (Exception ex)
             {
                 UtilityMethods.WriteToTextLog("Exception in ExistInAsinToSku: "+ex.Message,"ERR");
+                UtilityMethods.SendErrMail("Exception in ExistInAsinToSku: "+ex.Message);
                 Console.WriteLine("Exception in ExistInAsinToSku: "+ex.Message);
                 if (con.State == ConnectionState.Open)
                     con.Close();
@@ -195,6 +201,7 @@ public static  void AddInventoryToKT(string asin, int availableQuantity,
        if(effectedRows != 1)
           {
              Console.WriteLine("ERROR AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin);
+            UtilityMethods.SendErrMail("AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin);
             UtilityMethods.WriteToTextLog("AddInventoryToKT- effected rows are " + effectedRows + " while adding order with asin " + asin,"ERR");
           }
       }
@@ -205,6 +212,7 @@ public static  void AddInventoryToKT(string asin, int availableQuantity,
                 if (con.State == ConnectionState.Open)
                     con.Close();
    UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
+UtilityMethods.SendErrMail(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999));
 }
         }
 public static bool deleteInventoryTable(string marketPlace)
@@ -229,6 +237,7 @@ public static bool deleteInventoryTable(string marketPlace)
                 if (con.State == ConnectionState.Open)
                     con.Close();  
                UtilityMethods.WriteToTextLog(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999),"ERR");
+ UtilityMethods.SendErrMail(e.Message.Length <= 1999 ? e.Message: e.Message.Substring(0, 1999));
                return false;
             }
         }
