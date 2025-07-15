@@ -2,12 +2,15 @@
 using RestSharp;
 using System.Data.SqlClient;
 using System.Data;
+using Amazon.Runtime.Internal;
+using System.Text.Json;
+using System.Text;
 
 namespace AmazonAPI
 {
     public class GetOrdersClass
     {
-      public static string GetOrders(string token, string marketPlace,string createdAfter,
+      public static string GetOrders( string marketPlace,string createdAfter,
                                       string createdBefore)
       {
          string nextToken = null;
@@ -19,7 +22,7 @@ namespace AmazonAPI
         var request = new RestRequest("/orders/v0/orders", Method.Get);
         request.AddHeader("Content-Type", "application/json");
         request.AddHeader("Accept", "application/json");
-        request.AddHeader("x-amz-access-token",token);
+        request.AddHeader("x-amz-access-token",SD.accessToken);
         request.AddQueryParameter("MarketplaceIds",marketPlace);
         request.AddQueryParameter("CreatedAfter",createdAfter);
         request.AddQueryParameter("CreatedBefore",createdBefore);
@@ -45,16 +48,31 @@ namespace AmazonAPI
           {
               if (nextToken == null) // there are less then 100 and no paging
                {
-                 bool result  = loopOrders(token,JObject.Parse(response.Content));
+                 bool result  = loopOrders(JObject.Parse(response.Content));
+              //   UtilityMethods.WriteToTextLog("Waiting for 20 seconds...","INF");
+               //  Console.WriteLine("Waiting for 20 seconds...");
+                // Thread.Sleep(30000);
                 }
                else // there is next token, more then 1 page
                {
                  bool result;
+                 int countToNextToken=0;
                   while(nextToken != null)
                   {
+                    countToNextToken++;
+                    Console.WriteLine("countToNextToken is " + countToNextToken);
+                    if (countToNextToken == 12)
+                     {
+                       //SD.accessToken = RefreshAccessToken(SD.accessToken);
+                      // Console.WriteLine("refresh Token");
+                       countToNextToken = 0;
+                      }
                    CancellationToken cancellationToken = CancellationToken.None;
-                   Task.Delay(5000, cancellationToken).GetAwaiter().GetResult();
-                     result  = loopOrders(token,JObject.Parse(response.Content));
+                   //Task.Delay(5000, cancellationToken).GetAwaiter().GetResult();
+                     result  = loopOrders(JObject.Parse(response.Content));
+                 //    UtilityMethods.WriteToTextLog("Waiting for 20 seconds...","INF");
+                 //    Console.WriteLine("Waiting for 20 seconds...");
+                 //    Thread.Sleep(30000);
                     request.AddOrUpdateParameter("NextToken", nextToken, ParameterType.QueryString);
                     response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
                     if(response.StatusCode != System.Net.HttpStatusCode.OK)
@@ -64,17 +82,104 @@ namespace AmazonAPI
                 UtilityMethods.SendErrMail("GetOrders2 returned status " + response.StatusCode);      
                 Console.WriteLine
                       ("GetOrders2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
-                       return null;
+                      Console.WriteLine(response.Content);
+                      UtilityMethods.WriteToTextLog(response.Content,"ERR");
+                      ///////TEMP///////TEMP//////////TEMP/////////////////////////////////////////////
+                      SD.accessToken = GetAccessTokenClass.getAccessToken();
+                       Console.WriteLine("token - first time : " + SD.accessToken);
+                       UtilityMethods.WriteToTextLog("token - first time : " + SD.accessToken,"ERR");
+                       createdAfter =  getLastDate();
+         createdBefore = "2024-11-01T00:00:00Z";//DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+         
+                 if(response.StatusCode.ToString() == "Forbidden" && 
+                    DateTime.Parse(createdAfter)  < DateTime.Parse(createdBefore))
+                      GetOrdersClass.GetOrders(SD.USMarketplace,createdAfter,createdBefore);
+                      return null;
                      }
                      nextToken = (string)(JObject.Parse(response.Content))["payload"]["NextToken"];
                    }
                    //at the end of the loop nextToken is null so we are at the last page
-                    result  = loopOrders(token,JObject.Parse(response.Content));
+                    result  = loopOrders(JObject.Parse(response.Content));
+                 //   UtilityMethods.WriteToTextLog("Waiting for 20 seconds...","INF");
+                 //   Console.WriteLine("Waiting for 20 seconds...");
+                //    Thread.Sleep(30000);
                 }
             }
            return "";
 }
-     public static bool loopOrders(string token, JObject jobj)
+//------------------------------------
+public static string getLastDate()
+        {
+           
+            SqlConnection con = new SqlConnection(SD.connectionStr);
+            string sql = "select max(purchaseDate) from AmazonOrders a where MarketPlace = 'US' and PurchaseDate < '2024-11-01 00:00:00.0000000'";
+              try
+            {
+                con.Open();
+                
+                SqlCommand cmd = new SqlCommand(sql, con);
+              
+                 SqlDataReader reader = cmd.ExecuteReader();
+                
+              while (reader.Read())
+                {
+                 
+                 string res =  reader.GetDateTime(0).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                 con.Close();
+                 return res;
+                }
+              con.Close();
+              return null;
+                
+            }
+            catch (Exception ex)
+            {
+              
+                return null;
+            }
+        }
+    private static readonly HttpClient _httpClient = new HttpClient();
+    private const string TokenUrl = "https://api.amazon.com/auth/o2/token";
+
+    public static string RefreshAccessToken(string refreshToken)
+    {
+        try
+        {
+            var requestData = new Dictionary<string, string>
+            {
+                { "grant_type", "refresh_token" },
+                { "refresh_token", SD.refreshToken },
+                { "client_id", SD.clientID },
+                { "client_secret", SD.clientSecret }
+            };
+
+            var requestContent = new StringContent(JsonSerializer.Serialize(requestData), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = _httpClient.PostAsync(TokenUrl, requestContent).GetAwaiter().GetResult();
+            string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Token refresh failed! HTTP {response.StatusCode}: {responseBody}");
+                return null;
+            }
+
+            using var jsonDoc = JsonDocument.Parse(responseBody);
+            string newAccessToken = jsonDoc.RootElement.GetProperty("access_token").GetString();
+
+            Console.WriteLine("✅ Access token refreshed successfully!");
+            return newAccessToken;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception in RefreshAccessToken: {ex.Message}");
+            return null;
+        }
+    }
+
+//-------------------------------------
+
+     public static bool loopOrders(JObject jobj)
       {
       try{ 
            int i =0;
@@ -85,7 +190,7 @@ namespace AmazonAPI
               bool existOrd = ExistOrder(amazonOrderId);
              if(existOrd)
                {
-               Console.WriteLine(amazonOrderId + "exsits in KT");
+               Console.WriteLine(amazonOrderId + "exsits in KT Date " + obj["PurchaseDate"]);
                UtilityMethods.WriteToTextLog(amazonOrderId + "exsits in KT", "INF");
                }
              else{ 
@@ -99,7 +204,7 @@ namespace AmazonAPI
              bool isFBA =false;
                if ((string)obj["FulfillmentChannel"] == "AFN") //FBA only
                   {
-                    GetOrderItem(token, amazonOrderId,marketPlace,purchaseDate);
+                    GetOrderItem(amazonOrderId,marketPlace,purchaseDate);
                     }
             }
               }
@@ -144,11 +249,11 @@ public static bool ExistOrder(string amazonOrderId)
                 return false;
             }
 }
-public static  string GetOrderItem(string token, string orderId, string marketPlace,DateTime purchaseDate)
+public static  string GetOrderItem( string orderId, string marketPlace,DateTime purchaseDate)
       {
        try{ 
          CancellationToken cancellationToken = CancellationToken.None;
-          Task.Delay(1000, cancellationToken).GetAwaiter().GetResult();
+          Task.Delay(2000, cancellationToken).GetAwaiter().GetResult();
          var options = new RestClientOptions("https://sellingpartnerapi-na.amazon.com")
            {
              MaxTimeout = -1,
@@ -157,7 +262,7 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
         var request = new RestRequest("/orders/v0/orders/"+orderId+"/orderItems", Method.Get);
         request.AddHeader("Content-Type", "application/json");
         request.AddHeader("Accept", "application/json");
-        request.AddHeader("x-amz-access-token",token);
+        request.AddHeader("x-amz-access-token",SD.accessToken);
          RestResponse response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
          if(response.StatusCode != System.Net.HttpStatusCode.OK)
                  {
@@ -166,6 +271,7 @@ public static  string GetOrderItem(string token, string orderId, string marketPl
       UtilityMethods.SendErrMail("GetOrderItem returned status " + response.StatusCode);             
       Console.WriteLine
                     ("GetOrderItem e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
+                    Console.WriteLine(response.Content);
                     return null;
                }
           

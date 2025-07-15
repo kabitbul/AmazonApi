@@ -11,6 +11,7 @@ namespace AmazonAPI
       public static string refreshToken = Environment.GetEnvironmentVariable("AMZ_REFRESH_TOKEN");
         public static string USMarketplace = "ATVPDKIKX0DER";
         public static string CAMarketplace = "A2EUQ1WTGCTBG2";
+      public static string accessToken = "";
 
        
 
