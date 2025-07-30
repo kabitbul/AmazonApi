@@ -4,6 +4,7 @@ using AmazonAPI;
 using System.Net.Mail;
 using System.Net;
 using System.Runtime.Intrinsics.X86;
+using Microsoft.VisualBasic;
 
 namespace AmazonApi
 {   
@@ -18,34 +19,47 @@ namespace AmazonApi
           string createdAfter ;
           string createdBefore;
           string invDate;
-          Console.WriteLine("Start at " + UtilityMethods.IsraelDateTime());
-//string aaa = GetOrdersClass.getLastDate();
-//*************KT START***************KT START********KT START*******KT START*********KT START***//
-       //  SD.accessToken = GetAccessTokenClass.getAccessToken();
-       //   Console.WriteLine("token - first time : " + SD.accessToken);
-         createdAfter =  "2025-04-23T00:00:00Z";//DateTime.UtcNow.AddHours(-7).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-      createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-      //   GetOrdersClass.GetOrders(SD.USMarketplace,createdAfter,createdBefore);
 invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
                              AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
- //SD.accessToken = "";
-                  //token:
-                //  SD.accessToken = GetAccessTokenClass.getAccessToken();
-//                  if(SD.accessToken == null || SD.accessToken == "")
-//                   {
-//                       Console.WriteLine("token returned null");
-//                       UtilityMethods.WriteToTextLog("token returned null", "ERR");
-// UtilityMethods.SendErrMail("token returned null");
-//                   }
-//                  else
-//                  {
-//                      // inventory: "FuelHose_3ft_1/4inch_clear" "CarCoasters_FBA"
-               //    GetListingItemClass.GetItemBySellerSKU(SD.accessToken,"FuelHose_3ft_1/4inch_clear",SD.USMarketplace);
-                     // GetInventoryClass.GetInventory(SD.accessToken,SD.USMarketplace,invDate);
-                    // GetCatalogItemClass.GetCatalogItemBySellerSKU(SD.accessToken,"CarCoasters_FBA",SD.USMarketplace);
-                   //  GetInventoryClass.GetAWDInventory(SD.accessToken);
-//                  
-//                  }
+foreach (int stid in SD.storesId)
+                 {
+                  SD.accessToken = "";
+                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
+                  if(SD.accessToken == null || SD.accessToken == "")
+                   {
+                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
+                   }
+                 else{ 
+                    foreach (string mp in SD.MarketplaceList)
+                    {
+                      //orders:
+                      Console.WriteLine("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                         
+                 //----------------------------------------------------------------
+           
+                         AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,true);
+                         Console.WriteLine("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                           
+                         AAmzGetInventoryClass.GetAWDInventory(SD.accessToken,stid);
+                        bool res = AAmzGetInventoryClass.DeleteTempSkuAsin(stid);
+                         //---------------------------------------------------------------
+                  Console.WriteLine("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+                UtilityMethods.WriteToTextLog("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+                   //TEMP+++++++++++++++ 
+                   GetInventoryClass.GetInventory(SD.accessToken,mp,invDate);
+                    }
+                  }               
+               }
 //*************KT END***************KT END********KT END*******KT END*********KT END***//
 //************************************************************************************///
 //************************************************************************************//
@@ -66,92 +80,118 @@ invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
             
               if(min == 0)
               {
-                Console.WriteLine("======Start Orders Update for KT======");
-                UtilityMethods.WriteToTextLog("======Start Orders Update for KT======", "INFO");
-                SD.accessToken = "";
-                //token:
-                SD.accessToken = GetAccessTokenClass.getAccessToken();
-                if(SD.accessToken == null || SD.accessToken == "")
-                {
-                  Console.WriteLine("token returned null");
-                  UtilityMethods.WriteToTextLog("token returned null", "ERR");
-                  UtilityMethods.SendErrMail("token returned null");
-                 }
-                else
-                 { 
-                   //orders:
-                Console.WriteLine("----Start Orders For US---");
-                UtilityMethods.WriteToTextLog("----Start Orders For US---", "INFO");
-                   GetOrdersClass.GetOrders(SD.USMarketplace,createdAfter,createdBefore);//US
-                Console.WriteLine("----Start Orders For CA---");
-                UtilityMethods.WriteToTextLog("----Start Orders For CA---", "INFO");
-                   GetOrdersClass.GetOrders(SD.CAMarketplace,createdAfter,createdBefore);//CA
-                 }
-                Console.WriteLine("======End Orders Update for KT======");
-                UtilityMethods.WriteToTextLog("======End Orders Update for KT======", "INFO");
-               // Console.WriteLine("======Start Orders Update for KESEM======");
-              //  UtilityMethods.WriteToTextLog("======Start Orders Update for KESEM======", "INFO");
-                
-               }
-             
-              if (hour == 20 && min == 30)
-               { 
+                Console.WriteLine("======Start Orders Update ======");
+                UtilityMethods.WriteToTextLog("======Start Orders Update======", "INFO");
+                 foreach (int stid in SD.storesId)
+                 {
                   SD.accessToken = "";
-                  //token:
-                  SD.accessToken = GetAccessTokenClass.getAccessToken();
+                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
                   if(SD.accessToken == null || SD.accessToken == "")
                    {
-                       Console.WriteLine("token returned null");
-                       UtilityMethods.WriteToTextLog("token returned null", "ERR");
- UtilityMethods.SendErrMail("token returned null");
+                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
+                 }
+                 else{ 
+                    foreach (string mp in SD.MarketplaceList)
+                    {
+                      //orders:
+                      Console.WriteLine("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                     
+                         AAmzGetOrdersClass.GetOrders(mp,createdAfter,createdBefore,stid);
+                  Console.WriteLine("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+                UtilityMethods.WriteToTextLog("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+                  //temp+++++ 
+                //  GetOrdersClass.GetOrders(mp,createdAfter,createdBefore); 
                    }
-                  else
-                  {
-                      // inventory: 
-                      UtilityMethods.WriteToTextLog("starting inventory","INF");
-                      Console.WriteLine("starting inventory");
-                      GetInventoryClass.GetInventory(SD.accessToken,SD.USMarketplace,invDate);
-                      GetInventoryClass.GetInventory(SD.accessToken,SD.CAMarketplace,invDate);
-                      UtilityMethods.WriteToTextLog("ending inventory","INF");
-                      Console.WriteLine("ending inventory");
-                      // AWD inventory: 
-                      UtilityMethods.WriteToTextLog("starting AWD inventory","INF");
-                      Console.WriteLine("starting AWD inventory");
-                      GetInventoryClass.GetAWDInventory(SD.accessToken);
-                      UtilityMethods.WriteToTextLog("ending AWD inventory","INF");
-                      Console.WriteLine("ending AWD inventory");
-                  }
+                  } 
+               }
+              SD.accessToken = "";
+             }
+              if (hour == 20 && min == 30)
+               { 
+                Console.WriteLine("======Start Inventory======");
+                UtilityMethods.WriteToTextLog("======Start Inventory======", "INFO");
+                 foreach (int stid in SD.storesId)
+                 {
+                  SD.accessToken = "";
+                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
+                  if(SD.accessToken == null || SD.accessToken == "")
+                   {
+                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
+                   }
+                 else{ 
+                    foreach (string mp in SD.MarketplaceList)
+                    {
+                      //orders:
+                      Console.WriteLine("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                         //----------------------------------------------------------------
+                         AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,false);
+                         Console.WriteLine("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                           AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,true);
+                         AAmzGetInventoryClass.GetAWDInventory(SD.accessToken,stid);
+                         AAmzGetInventoryClass.DeleteTempSkuAsin(stid);
+                         //---------------------------------------------------------------
+                  Console.WriteLine("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+                UtilityMethods.WriteToTextLog("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+                   //TEMP+++++++++++++++ 
+                  // GetInventoryClass.GetInventory(SD.accessToken,mp,invDate);
+                    }
+                  }               
+               }
+               SD.accessToken = "";
              }
               if(hour == 2 && min == 20)
               {
                 Console.WriteLine("======Start Orders make sure all orders are added from last 2 days======");
                 UtilityMethods.WriteToTextLog("======Start Orders make sure all orders are added from last 2 days======", "INFO");
-                SD.accessToken = "";
-                //token:
-                SD.accessToken = GetAccessTokenClass.getAccessToken();
-                if(SD.accessToken == null || SD.accessToken == "")
-                {
-                  Console.WriteLine("token returned null");
-                  UtilityMethods.WriteToTextLog("token returned null", "ERR");
-                  UtilityMethods.SendErrMail("token returned null");
-                 }
-                else
+                 foreach (int stid in SD.storesId)
                  {
-                   createdAfter =  DateTime.UtcNow.AddHours(-48).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-                   createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-                   //orders:
-                Console.WriteLine("----Start Orders For US---");
-                UtilityMethods.WriteToTextLog("----Start Orders For US---", "INFO");
-                   GetOrdersClass.GetOrders(SD.USMarketplace,createdAfter,createdBefore);//US
-                Console.WriteLine("----Start Orders For CA---");
-                UtilityMethods.WriteToTextLog("----Start Orders For CA---", "INFO");
-                   GetOrdersClass.GetOrders(SD.CAMarketplace,createdAfter,createdBefore);//CA
+                  SD.accessToken = "";
+                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
+                  if(SD.accessToken == null || SD.accessToken == "")
+                   {
+                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
                  }
-                Console.WriteLine("======End Orders Update for KT======");
-                UtilityMethods.WriteToTextLog("======End Orders Update for KT======", "INFO");
-                Console.WriteLine("======Start Orders Update for KESEM======");
-                UtilityMethods.WriteToTextLog("======Start Orders Update for KESEM======", "INFO");
-                
+                 else{ 
+                    foreach (string mp in SD.MarketplaceList)
+                    {
+                     createdAfter =  DateTime.UtcNow.AddHours(-48).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                   createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                      //orders:
+                      Console.WriteLine("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+                UtilityMethods.WriteToTextLog("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                     
+                         AAmzGetOrdersClass.GetOrders(mp,createdAfter,createdBefore,stid);
+                  Console.WriteLine("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+                UtilityMethods.WriteToTextLog("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+                  //TEMP ++++++
+                 // GetOrdersClass.GetOrders(mp,createdAfter,createdBefore);
+                    }
+                  } 
+               }
+                SD.accessToken = "";
                }
 //--------------------------------------------------------
              }//end while loop

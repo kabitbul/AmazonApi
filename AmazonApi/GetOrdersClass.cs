@@ -63,16 +63,10 @@ namespace AmazonAPI
                     Console.WriteLine("countToNextToken is " + countToNextToken);
                     if (countToNextToken == 12)
                      {
-                       //SD.accessToken = RefreshAccessToken(SD.accessToken);
-                      // Console.WriteLine("refresh Token");
                        countToNextToken = 0;
                       }
                    CancellationToken cancellationToken = CancellationToken.None;
-                   //Task.Delay(5000, cancellationToken).GetAwaiter().GetResult();
                      result  = loopOrders(JObject.Parse(response.Content));
-                 //    UtilityMethods.WriteToTextLog("Waiting for 20 seconds...","INF");
-                 //    Console.WriteLine("Waiting for 20 seconds...");
-                 //    Thread.Sleep(30000);
                     request.AddOrUpdateParameter("NextToken", nextToken, ParameterType.QueryString);
                     response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
                     if(response.StatusCode != System.Net.HttpStatusCode.OK)

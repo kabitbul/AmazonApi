@@ -12,7 +12,10 @@ namespace AmazonAPI
         public static string USMarketplace = "ATVPDKIKX0DER";
         public static string CAMarketplace = "A2EUQ1WTGCTBG2";
       public static string accessToken = "";
-
+      public static int    KTStoreId = 1;
+      public static string    KTStoreName = "KT";
+      public static List<int> storesId = new List<int> { KTStoreId};
+      public static List<string> MarketplaceList = new List<string> { "ATVPDKIKX0DER","A2EUQ1WTGCTBG2"};
        
 
     }
