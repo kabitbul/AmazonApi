@@ -191,8 +191,8 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
                 (storeName+" GetAWDInventory e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                 return null;
                }
-         if((JObject.Parse(response.Content))["pagination"] != null)  
-            nextToken = (string)(JObject.Parse(response.Content))["pagination"]["nextToken"];
+         if((JObject.Parse(response.Content))["nextToken"] != null)  
+            nextToken = (string)(JObject.Parse(response.Content))["nextToken"];
         if(response.Content != null)
           {
            deleteAWDInventoryTable(storeId);
@@ -227,8 +227,8 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
                     (storeName+" GetAWDInventory2 e returned status " + response.StatusCode +"-" + UtilityMethods.IsraelDateTime());
                     return null;
                    }
-                if((JObject.Parse(response.Content))["pagination"] != null)  
-                   nextToken = (string)(JObject.Parse(response.Content))["pagination"]["nextToken"];
+                if((JObject.Parse(response.Content))["nextToken"] != null)  
+                   nextToken = (string)(JObject.Parse(response.Content))["nextToken"];
                 else
                    nextToken = null;
                }

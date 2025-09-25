@@ -21,48 +21,11 @@ namespace AmazonApi
           string invDate;
 invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
                              AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
-foreach (int stid in SD.storesId)
-                 {
-                  SD.accessToken = "";
-                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
-                  if(SD.accessToken == null || SD.accessToken == "")
-                   {
-                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
-                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
-                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
-                   }
-                 else{ 
-                    foreach (string mp in SD.MarketplaceList)
-                    {
-                      //orders:
-                      Console.WriteLine("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
-                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
-                UtilityMethods.WriteToTextLog("----Start Inventory For Store "+DataByStoreClass.getStoreName(stid)+
-                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
-                         
-                 //----------------------------------------------------------------
-           
-                         AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,true);
-                         Console.WriteLine("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
-                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
-                UtilityMethods.WriteToTextLog("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
-                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
-                           
-                         AAmzGetInventoryClass.GetAWDInventory(SD.accessToken,stid);
-                        bool res = AAmzGetInventoryClass.DeleteTempSkuAsin(stid);
-                         //---------------------------------------------------------------
-                  Console.WriteLine("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
-                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
-                UtilityMethods.WriteToTextLog("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
-                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
-                   //TEMP+++++++++++++++ 
-                   GetInventoryClass.GetInventory(SD.accessToken,mp,invDate);
-                    }
-                  }               
-               }
+
 //*************KT END***************KT END********KT END*******KT END*********KT END***//
 //************************************************************************************///
 //************************************************************************************//
+
 //return;
 
            while (true)
@@ -137,12 +100,15 @@ foreach (int stid in SD.storesId)
                         " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
                          //----------------------------------------------------------------
                          AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,false);
+                         Thread.Sleep(20000);
                          Console.WriteLine("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
                         " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
                 UtilityMethods.WriteToTextLog("----Start AWD Inventory For Store "+DataByStoreClass.getStoreName(stid)+
                         " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
                            AAmzGetInventoryClass.GetInventory(SD.accessToken,mp,invDate,stid,true);
+                           Thread.Sleep(20000);
                          AAmzGetInventoryClass.GetAWDInventory(SD.accessToken,stid);
+                       Thread.Sleep(20000);
                          AAmzGetInventoryClass.DeleteTempSkuAsin(stid);
                          //---------------------------------------------------------------
                   Console.WriteLine("======End Inventory Update for Store "+DataByStoreClass.getStoreName(stid)+
