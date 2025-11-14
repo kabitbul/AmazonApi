@@ -19,8 +19,41 @@ namespace AmazonApi
           string createdAfter ;
           string createdBefore;
           string invDate;
-invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
-                             AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+//invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
+//                             AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+//createdAfter =  DateTime.UtcNow.AddHours(-26).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+//             createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+//Console.WriteLine("======Start Orders Update ======");
+//                UtilityMethods.WriteToTextLog("======Start Orders Update======", "INFO");
+//                 foreach (int stid in SD.storesId)
+//                 {
+//                  SD.accessToken = "";
+//                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
+//                  if(SD.accessToken == null || SD.accessToken == "")
+//                   {
+//                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+//                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+//                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
+//                 }
+//                 else{ 
+//                    foreach (string mp in SD.MarketplaceList)
+//                    {
+//                      //orders:
+//                      Console.WriteLine("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+//                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+//                UtilityMethods.WriteToTextLog("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+//                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
+                     
+//                         AAmzGetOrdersClass.GetOrders(mp,createdAfter,createdBefore,stid);
+//                  Console.WriteLine("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+//                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+//                UtilityMethods.WriteToTextLog("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+//                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+//                  //temp+++++ 
+//                //  GetOrdersClass.GetOrders(mp,createdAfter,createdBefore); 
+//                   }
+//                  } 
+//               }
 
 //*************KT END***************KT END********KT END*******KT END*********KT END***//
 //************************************************************************************///
@@ -159,9 +192,46 @@ invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
                }
                 SD.accessToken = "";
                }
+              if(hour == 16 && min == 10)
+              {
+                SendRunningStatusEmail();
+              }
 //--------------------------------------------------------
              }//end while loop
 
           }
+  private static void SendRunningStatusEmail()
+        {
+            try
+            {
+                // Configure your SMTP client settings.
+                // For example, using Gmail's SMTP server.
+                SmtpClient smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", "mqgcejocdvbsmxui"),
+                    EnableSsl = true
+                };
+
+                // Create the email message.
+                MailMessage mailMessage = new MailMessage
+                {
+                    From = new MailAddress("ktonlinemarketing1@gmail.com"),
+                    Subject = "🔔✅API Machine is running - KT✅🔔",
+                    Body = "OK"
+                };
+
+                // Send the email to yourself.
+                mailMessage.To.Add("ktonlinemarketing1@gmail.com");
+
+                // Send the email.
+                smtpClient.Send(mailMessage);
+            }
+            catch (Exception emailEx)
+            {
+                // If the email fails, write to the console (or log appropriately).
+                Console.WriteLine("Failed to send exception email: " + emailEx.Message);
+            }
+        }
      }
 }
