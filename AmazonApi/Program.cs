@@ -3,8 +3,6 @@
 using AmazonAPI;
 using System.Net.Mail;
 using System.Net;
-using System.Runtime.Intrinsics.X86;
-using Microsoft.VisualBasic;
 
 namespace AmazonApi
 {   
@@ -19,49 +17,52 @@ namespace AmazonApi
           string createdAfter ;
           string createdBefore;
           string invDate;
-//invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
-//                             AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
-//createdAfter =  DateTime.UtcNow.AddHours(-26).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
-//             createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
-//Console.WriteLine("======Start Orders Update ======");
-//                UtilityMethods.WriteToTextLog("======Start Orders Update======", "INFO");
-//                 foreach (int stid in SD.storesId)
-//                 {
-//                  SD.accessToken = "";
-//                  SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
-//                  if(SD.accessToken == null || SD.accessToken == "")
-//                   {
-//                     Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
-//                     UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
-//                     UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
-//                 }
-//                 else{ 
-//                    foreach (string mp in SD.MarketplaceList)
-//                    {
-//                      //orders:
-//                      Console.WriteLine("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
-//                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
-//                UtilityMethods.WriteToTextLog("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
-//                        " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
-                     
-//                         AAmzGetOrdersClass.GetOrders(mp,createdAfter,createdBefore,stid);
-//                  Console.WriteLine("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
-//                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
-//                UtilityMethods.WriteToTextLog("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
-//                  " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
-//                  //temp+++++ 
-//                //  GetOrdersClass.GetOrders(mp,createdAfter,createdBefore); 
-//                   }
-//                  } 
-//               }
 
-//*************KT END***************KT END********KT END*******KT END*********KT END***//
-//************************************************************************************///
-//************************************************************************************//
 
-//return;
+            invDate = UtilityMethods.PDTDateTime(DateTime.UtcNow).AddDays(-10).
+                                         AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //createdAfter =  DateTime.UtcNow.AddHours(-24).AddMinutes(-6).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //createdBefore = DateTime.UtcNow.AddMinutes(-15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //Console.WriteLine("======Start Orders Update ======");
+            //UtilityMethods.WriteToTextLog("======Start Orders Update======", "INFO");
+            //foreach (int stid in SD.storesId)
+            //{
+            //    SD.accessToken = "";
+            //    SD.accessToken = AAmzGetAccessTokenClass.getAccessToken(stid);
+            //    if (SD.accessToken == null || SD.accessToken == "")
+            //    {
+            //        Console.WriteLine("token returned null for store " + DataByStoreClass.getStoreName(stid));
+            //        UtilityMethods.WriteToTextLog("token returned null for store "+ DataByStoreClass.getStoreName(stid), "ERR");
+            //        UtilityMethods.SendErrMail("token returned null for store "+ DataByStoreClass.getStoreName(stid));
+            //    }
+            //    else
+            //    {
+            //        foreach (string mp in SD.MarketplaceList)
+            //        {
+            //            //orders:
+            //            Console.WriteLine("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+            //              " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---");
+            //            UtilityMethods.WriteToTextLog("----Start Orders For Store "+DataByStoreClass.getStoreName(stid)+
+            //                    " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"---", "INFO");
 
-           while (true)
+            //            AAmzGetOrdersClass.GetOrders(mp, createdAfter, createdBefore, stid);
+            //            Console.WriteLine("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+            //            " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======");
+            //            UtilityMethods.WriteToTextLog("======End Orders Update for Store "+DataByStoreClass.getStoreName(stid)+
+            //              " marketplace "+DataByStoreClass.getMarketplaceName(mp)+"======", "INFO");
+            //            //temp+++++ 
+            //            //  GetOrdersClass.GetOrders(mp,createdAfter,createdBefore); 
+            //        }
+            //    }
+            //}
+
+            //*************KT END***************KT END********KT END*******KT END*********KT END***//
+            //************************************************************************************///
+            //************************************************************************************//
+
+            //return;
+
+            while (true)
              {
               await Task.Delay(58000, cancellationToken);
               min = UtilityMethods.IsraelDateTime().TimeOfDay.Minutes;
@@ -154,6 +155,13 @@ namespace AmazonApi
                   }               
                }
                SD.accessToken = "";
+                foreach (int stid in SD.storesId)
+                 { 
+                    foreach (string mp in SD.MarketplaceList)
+                    { 
+                      AAmzInventoryCostClass.populateDailyInventoryCostTable(stid,mp);
+                    }
+               }
              }
               if(hour == 2 && min == 20)
               {
@@ -233,5 +241,9 @@ namespace AmazonApi
                 Console.WriteLine("Failed to send exception email: " + emailEx.Message);
             }
         }
+public static void populateDailyInventoryCostTable()
+{
+  
+}
      }
 }
