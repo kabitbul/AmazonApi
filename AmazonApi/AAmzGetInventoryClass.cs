@@ -111,12 +111,21 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
            marketPlace = "CA";
         if(response.Content != null)
           {
+var previousInventory =
+        new Dictionary<string, FbaInventorySnapshot>(
+            StringComparer.OrdinalIgnoreCase);
             if(!forTemp)
-               deleteInventoryTable(marketPlace,storeId);
+{
+    previousInventory =
+            GetPreviousFbaInventory(storeId, marketPlace);
+
+        deleteInventoryTable(marketPlace, storeId);
+}
             UtilityMethods.WriteToTextLog("=================START ADD INVENTORY TO "+storeName+ " " + marketPlace+"=============","INF");
             if (nextToken == null) // there are less then 100 and no paging
              {
-              bool result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId, forTemp);  
+              bool result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId, forTemp,
+previousInventory);  
               if (result)
                {
                   UtilityMethods.WriteToTextLog(storeName+" END inventory update successfully","INF");
@@ -132,7 +141,7 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
                bool result;
                while(nextToken != null)
                {
-                  result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId,forTemp); 
+                  result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId,forTemp,previousInventory); 
                   request.AddOrUpdateParameter("nextToken", nextToken, ParameterType.QueryString);
                   response =  client.ExecuteAsync(request).GetAwaiter().GetResult();
                   if(response.StatusCode != System.Net.HttpStatusCode.OK)
@@ -150,7 +159,7 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
                    nextToken = null;
                }
               //at the end of the loop nextToken is null so we are at the last page
-              result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId,forTemp); 
+              result  = loopInventory(JObject.Parse(response.Content),marketPlace,storeId,forTemp,previousInventory); 
               if (result)
                {
                   UtilityMethods.WriteToTextLog(storeName+" END inventory update successfully","INF");
@@ -248,7 +257,8 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
        return "";
 }
 
-     public static bool loopInventory(JObject jobj,string marketPlace,int storeId,bool forTemp)
+     private static bool loopInventory(JObject jobj,string marketPlace,int storeId,bool forTemp,
+    Dictionary<string, FbaInventorySnapshot> previousInventory)
       {
        string storeName = DataByStoreClass.getStoreName(storeId);
       try{ 
@@ -272,9 +282,74 @@ UtilityMethods.SendErrMail(storeName+ " EXCEPTION in GetInventoryBysellerSKU wit
              int inboundReceivingQuantity = (int)obj["inventoryDetails"]["inboundReceivingQuantity"]; 
              int reservedQuantity = (int)obj["inventoryDetails"]["reservedQuantity"]["totalReservedQuantity"];
              bool existInAsinToSku = ExistInAsinToSku(asin,storeId);
-             if(existInAsinToSku)
-                 AddInventoryToKT(asin,availableQuantity,inboundShippedQuantity,inboundReceivingQuantity,
-                              reservedQuantity, marketPlace,storeId);
+            if (existInAsinToSku)
+{
+    if (previousInventory.TryGetValue(
+            asin,
+            out FbaInventorySnapshot previous))
+    {
+bool receivingStarted =
+    previous.InboundReceivingQty == 0
+    && inboundReceivingQuantity > 0;
+
+bool availableThresholdReachedWhileReceiving =
+    previous.AvailableQty < 30
+    && availableQuantity >= 30
+    && (
+        previous.InboundReceivingQty > 0
+        || inboundReceivingQuantity > 0
+    );
+
+bool receivingFinishedAndAvailableIncreased =
+    previous.InboundReceivingQty > 0
+    && inboundReceivingQuantity == 0
+    && availableQuantity > previous.AvailableQty;
+
+bool shippedQuantityMovedIntoAvailable =
+    previous.InboundShippedQty > inboundShippedQuantity
+    && availableQuantity > previous.AvailableQty;
+
+bool receivingIndication =
+    receivingStarted
+    || availableThresholdReachedWhileReceiving
+    || receivingFinishedAndAvailableIncreased
+    || shippedQuantityMovedIntoAvailable;
+
+        bool actionableQuantity =
+            availableQuantity >= 30;
+
+        if (receivingIndication && actionableQuantity)
+        {
+            string detectionReason =
+    receivingStarted
+        ? "ReceivingStarted"
+        : availableThresholdReachedWhileReceiving
+            ? "AvailableThresholdReached"
+            : receivingFinishedAndAvailableIncreased
+                ? "ReceivingFinishedAvailableUp"
+                : "InboundShippedDownAvailableUp";
+
+            TryCreateFbaReceivingAlert(
+                storeId,
+                marketPlace,
+                asin,
+                availableQuantity,
+                inboundShippedQuantity,
+                inboundReceivingQuantity,
+                reservedQuantity,
+                detectionReason);
+        }
+    }
+
+    AddInventoryToKT(
+        asin,
+        availableQuantity,
+        inboundShippedQuantity,
+        inboundReceivingQuantity,
+        reservedQuantity,
+        marketPlace,
+        storeId);
+}
               
             }
 
@@ -290,6 +365,115 @@ UtilityMethods.SendErrMail(storeName+" EXCEPTION in loopInventory" + e.Message);
                     return false;
             }
       }
+///////////////////////////////////////////////////////////////////
+private static void TryCreateFbaReceivingAlert(
+    int storeId,
+    string marketplace,
+    string asin,
+    int availableQty,
+    int inboundShippedQty,
+    int inboundReceivingQty,
+    int reservedQty,
+    string detectionReason)
+{
+    const string sql = @"
+        INSERT INTO dbo.AAmzFBAReceivingAlerts
+        (
+            StoreId,
+            Marketplace,
+            Asin,
+            AvailableQty,
+            InboundShippedQty,
+            InboundReceivingQty,
+            ReservedQty,
+            DetectionReason,
+            CreatedDate,
+            IsHandled,
+            HandledDate
+        )
+        SELECT
+            @StoreId,
+            @Marketplace,
+            @Asin,
+            @AvailableQty,
+            @InboundShippedQty,
+            @InboundReceivingQty,
+            @ReservedQty,
+            @DetectionReason,
+            @CreatedDate,
+            0,
+            NULL
+        WHERE NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.AAmzFBAReceivingAlerts
+            WHERE StoreId = @StoreId
+              AND Marketplace = @Marketplace
+              AND Asin = @Asin
+              AND CreatedDate >= DATEADD(DAY, -7, @CreatedDate)
+        );";
+
+    using (SqlConnection connection = new SqlConnection(SD.connectionStr))
+    using (SqlCommand command = new SqlCommand(sql, connection))
+    {
+       DateTime createdDate = UtilityMethods.IsraelDateTime();
+
+        command.Parameters.Add(
+            "@StoreId",
+            SqlDbType.Int).Value = storeId;
+
+        command.Parameters.Add(
+            "@Marketplace",
+            SqlDbType.NVarChar,
+            3).Value = marketplace;
+
+        command.Parameters.Add(
+            "@Asin",
+            SqlDbType.NVarChar,
+            20).Value = asin;
+
+        command.Parameters.Add(
+            "@AvailableQty",
+            SqlDbType.Int).Value = availableQty;
+
+        command.Parameters.Add(
+            "@InboundShippedQty",
+            SqlDbType.Int).Value = inboundShippedQty;
+
+        command.Parameters.Add(
+            "@InboundReceivingQty",
+            SqlDbType.Int).Value = inboundReceivingQty;
+
+        command.Parameters.Add(
+            "@ReservedQty",
+            SqlDbType.Int).Value = reservedQty;
+
+        command.Parameters.Add(
+            "@DetectionReason",
+            SqlDbType.NVarChar,
+            50).Value = detectionReason;
+
+        command.Parameters.Add(
+            "@CreatedDate",
+            SqlDbType.DateTime2).Value = createdDate;
+
+        connection.Open();
+
+        int insertedRows = command.ExecuteNonQuery();
+
+        if (insertedRows > 0)
+        {
+            UtilityMethods.WriteToTextLog(
+                "FBA receiving alert created: " +
+                $"StoreId={storeId}, " +
+                $"Marketplace={marketplace}, " +
+                $"ASIN={asin}, " +
+                $"Available={availableQty}, " +
+                $"Reason={detectionReason}",
+                "INF");
+        }
+    }
+}
 ///////////////////////////////////////////////////////////////////
 public static bool loopAWDInventory(JObject jobj,int storeId)
       {
@@ -663,6 +847,85 @@ string storeName = DataByStoreClass.getStoreName(storeId);
                return false;
             }
 }//delete rec
+private static Dictionary<string, FbaInventorySnapshot> GetPreviousFbaInventory(
+    int storeId,
+    string marketplace)
+{
+    var result = new Dictionary<string, FbaInventorySnapshot>(
+        StringComparer.OrdinalIgnoreCase);
+
+    const string sql = @"
+        SELECT
+            Asin,
+            AvailableQty,
+            InboundShippedQty,
+            InboundReceivingQty,
+            ReservedQty
+        FROM AAmzFBAInventory
+        WHERE StoreId = @StoreId
+          AND Marketplace = @Marketplace";
+
+    using (SqlConnection connection = new SqlConnection(SD.connectionStr))
+    using (SqlCommand command = new SqlCommand(sql, connection))
+    {
+        command.Parameters.Add("@StoreId", SqlDbType.Int).Value = storeId;
+        command.Parameters.Add("@Marketplace", SqlDbType.NVarChar, 3).Value = marketplace;
+
+        connection.Open();
+
+        using (SqlDataReader reader = command.ExecuteReader())
+        {
+            int asinOrdinal = reader.GetOrdinal("Asin");
+            int availableOrdinal = reader.GetOrdinal("AvailableQty");
+            int shippedOrdinal = reader.GetOrdinal("InboundShippedQty");
+            int receivingOrdinal = reader.GetOrdinal("InboundReceivingQty");
+            int reservedOrdinal = reader.GetOrdinal("ReservedQty");
+
+            while (reader.Read())
+            {
+                string asin = reader.IsDBNull(asinOrdinal)
+                    ? string.Empty
+                    : reader.GetString(asinOrdinal);
+
+                if (string.IsNullOrWhiteSpace(asin))
+                {
+                    continue;
+                }
+
+                result[asin] = new FbaInventorySnapshot
+                {
+                    Asin = asin,
+
+                    AvailableQty = reader.IsDBNull(availableOrdinal)
+                        ? 0
+                        : reader.GetInt32(availableOrdinal),
+
+                    InboundShippedQty = reader.IsDBNull(shippedOrdinal)
+                        ? 0
+                        : reader.GetInt32(shippedOrdinal),
+
+                    InboundReceivingQty = reader.IsDBNull(receivingOrdinal)
+                        ? 0
+                        : reader.GetInt32(receivingOrdinal),
+
+                    ReservedQty = reader.IsDBNull(reservedOrdinal)
+                        ? 0
+                        : reader.GetInt32(reservedOrdinal)
+                };
+            }
+        }
+    }
+
+    return result;
+}
+private sealed class FbaInventorySnapshot
+{
+    public string Asin { get; set; } = string.Empty;
+    public int AvailableQty { get; set; }
+    public int InboundShippedQty { get; set; }
+    public int InboundReceivingQty { get; set; }
+    public int ReservedQty { get; set; }
+}
 }
 }
 
