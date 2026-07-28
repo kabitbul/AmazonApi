@@ -16,6 +16,7 @@ namespace AmazonAPI
       public static string    KTStoreName = "KT";
       public static List<int> storesId = new List<int> { KTStoreId};
       public static List<string> MarketplaceList = new List<string> { "ATVPDKIKX0DER","A2EUQ1WTGCTBG2"};
+      public static string gmailPassSMTP = Environment.GetEnvironmentVariable("GMAIL_PASS_SMTP");
        
 
     }

@@ -110,7 +110,7 @@ public static void SendErrMail(string excep)
                 SmtpClient smtpClient = new SmtpClient("smtp.gmail.com")
                 {
                     Port = 587,
-                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", "mqgcejocdvbsmxui"),
+                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", SD.gmailPassSMTP),
                     EnableSsl = true
                 };
 

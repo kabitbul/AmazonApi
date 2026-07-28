@@ -109,7 +109,7 @@ namespace AmazonApi
                   } 
                }
               SD.accessToken = "";
-             }
+            }
               if (hour == 20 && min == 30)
                { 
                 Console.WriteLine("======Start Inventory======");
@@ -217,7 +217,7 @@ namespace AmazonApi
                 SmtpClient smtpClient = new SmtpClient("smtp.gmail.com")
                 {
                     Port = 587,
-                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", "mqgcejocdvbsmxui"),
+                    Credentials = new NetworkCredential("ktonlinemarketing1@gmail.com", SD.gmailPassSMTP),
                     EnableSsl = true
                 };
 
