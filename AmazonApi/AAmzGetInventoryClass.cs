@@ -330,14 +330,21 @@ bool receivingIndication =
                 : "InboundShippedDownAvailableUp";
 
             TryCreateFbaReceivingAlert(
-                storeId,
-                marketPlace,
-                asin,
-                availableQuantity,
-                inboundShippedQuantity,
-                inboundReceivingQuantity,
-                reservedQuantity,
-                detectionReason);
+    storeId,
+    marketPlace,
+    asin,
+
+    previous.AvailableQty,
+    previous.InboundShippedQty,
+    previous.InboundReceivingQty,
+    previous.ReservedQty,
+
+    availableQuantity,
+    inboundShippedQuantity,
+    inboundReceivingQuantity,
+    reservedQuantity,
+
+    detectionReason);
         }
     }
 
@@ -370,39 +377,60 @@ private static void TryCreateFbaReceivingAlert(
     int storeId,
     string marketplace,
     string asin,
+
+    int previousAvailableQty,
+    int previousInboundShippedQty,
+    int previousInboundReceivingQty,
+    int previousReservedQty,
+
     int availableQty,
     int inboundShippedQty,
     int inboundReceivingQty,
     int reservedQty,
+
     string detectionReason)
 {
     const string sql = @"
-        INSERT INTO dbo.AAmzFBAReceivingAlerts
-        (
-            StoreId,
-            Marketplace,
-            Asin,
-            AvailableQty,
-            InboundShippedQty,
-            InboundReceivingQty,
-            ReservedQty,
-            DetectionReason,
-            CreatedDate,
-            IsHandled,
-            HandledDate
-        )
-        SELECT
-            @StoreId,
-            @Marketplace,
-            @Asin,
-            @AvailableQty,
-            @InboundShippedQty,
-            @InboundReceivingQty,
-            @ReservedQty,
-            @DetectionReason,
-            @CreatedDate,
-            0,
-            NULL
+    INSERT INTO dbo.AAmzFBAReceivingAlerts
+    (
+        StoreId,
+        Marketplace,
+        Asin,
+
+        PreviousAvailableQty,
+        PreviousInboundShippedQty,
+        PreviousInboundReceivingQty,
+        PreviousReservedQty,
+
+        AvailableQty,
+        InboundShippedQty,
+        InboundReceivingQty,
+        ReservedQty,
+
+        DetectionReason,
+        CreatedDate,
+        IsHandled,
+        HandledDate
+    )
+    SELECT
+        @StoreId,
+        @Marketplace,
+        @Asin,
+
+        @PreviousAvailableQty,
+        @PreviousInboundShippedQty,
+        @PreviousInboundReceivingQty,
+        @PreviousReservedQty,
+
+        @AvailableQty,
+        @InboundShippedQty,
+        @InboundReceivingQty,
+        @ReservedQty,
+
+        @DetectionReason,
+        @CreatedDate,
+        0,
+        NULL
         WHERE NOT EXISTS
         (
             SELECT 1
@@ -431,7 +459,21 @@ private static void TryCreateFbaReceivingAlert(
             "@Asin",
             SqlDbType.NVarChar,
             20).Value = asin;
+command.Parameters.Add(
+    "@PreviousAvailableQty",
+    SqlDbType.Int).Value = previousAvailableQty;
 
+command.Parameters.Add(
+    "@PreviousInboundShippedQty",
+    SqlDbType.Int).Value = previousInboundShippedQty;
+
+command.Parameters.Add(
+    "@PreviousInboundReceivingQty",
+    SqlDbType.Int).Value = previousInboundReceivingQty;
+
+command.Parameters.Add(
+    "@PreviousReservedQty",
+    SqlDbType.Int).Value = previousReservedQty;
         command.Parameters.Add(
             "@AvailableQty",
             SqlDbType.Int).Value = availableQty;
