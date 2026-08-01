@@ -257,121 +257,149 @@ previousInventory);
        return "";
 }
 
-     private static bool loopInventory(JObject jobj,string marketPlace,int storeId,bool forTemp,
+     private static bool loopInventory(
+    JObject jobj,
+    string marketPlace,
+    int storeId,
+    bool forTemp,
     Dictionary<string, FbaInventorySnapshot> previousInventory)
-      {
-       string storeName = DataByStoreClass.getStoreName(storeId);
-      try{ 
-           int i =0;
-           JArray ordersArray = (JArray)jobj["payload"]["inventorySummaries"];
-           foreach(JObject obj in ordersArray)
-           {
-             if(forTemp)
-              {
-               AddTempSkuAsin((string)obj["sellerSku"],(string)obj["asin"],storeId);
-               continue;
-                    }
-             string asin = (string)obj["asin"];
-             if(((int)obj["totalQuantity"]) == 0 || (string)obj["asin"] == "B0CBQHLCWS"
-                                                 || (string)obj["asin"] == "B08G9NLFGC"
-                                                 || (string)obj["asin"] == "B0CND1P9YD")
-               continue;
-            
-             int availableQuantity = (int)obj["inventoryDetails"]["fulfillableQuantity"];
-             int inboundShippedQuantity = (int)obj["inventoryDetails"]["inboundShippedQuantity"]; 
-             int inboundReceivingQuantity = (int)obj["inventoryDetails"]["inboundReceivingQuantity"]; 
-             int reservedQuantity = (int)obj["inventoryDetails"]["reservedQuantity"]["totalReservedQuantity"];
-             bool existInAsinToSku = ExistInAsinToSku(asin,storeId);
-            if (existInAsinToSku)
 {
-    if (previousInventory.TryGetValue(
-            asin,
-            out FbaInventorySnapshot previous))
+    string storeName = DataByStoreClass.getStoreName(storeId);
+
+    try
     {
-bool receivingStarted =
-    previous.InboundReceivingQty == 0
-    && inboundReceivingQuantity > 0;
+        JArray ordersArray =
+            (JArray)jobj["payload"]["inventorySummaries"];
 
-bool availableThresholdReachedWhileReceiving =
-    previous.AvailableQty < 30
-    && availableQuantity >= 30
-    && (
-        previous.InboundReceivingQty > 0
-        || inboundReceivingQuantity > 0
-    );
-
-bool receivingFinishedAndAvailableIncreased =
-    previous.InboundReceivingQty > 0
-    && inboundReceivingQuantity == 0
-    && availableQuantity > previous.AvailableQty;
-
-bool shippedQuantityMovedIntoAvailable =
-    previous.InboundShippedQty > inboundShippedQuantity
-    && availableQuantity > previous.AvailableQty;
-
-bool receivingIndication =
-    receivingStarted
-    || availableThresholdReachedWhileReceiving
-    || receivingFinishedAndAvailableIncreased
-    || shippedQuantityMovedIntoAvailable;
-
-        bool actionableQuantity =
-            availableQuantity >= 30;
-
-        if (receivingIndication && actionableQuantity)
+        foreach (JObject obj in ordersArray)
         {
-            string detectionReason =
-    receivingStarted
-        ? "ReceivingStarted"
-        : availableThresholdReachedWhileReceiving
-            ? "AvailableThresholdReached"
-            : receivingFinishedAndAvailableIncreased
-                ? "ReceivingFinishedAvailableUp"
-                : "InboundShippedDownAvailableUp";
+            if (forTemp)
+            {
+                AddTempSkuAsin(
+                    (string)obj["sellerSku"],
+                    (string)obj["asin"],
+                    storeId);
 
-            TryCreateFbaReceivingAlert(
-    storeId,
-    marketPlace,
-    asin,
+                continue;
+            }
 
-    previous.AvailableQty,
-    previous.InboundShippedQty,
-    previous.InboundReceivingQty,
-    previous.ReservedQty,
+            string asin = (string)obj["asin"];
 
-    availableQuantity,
-    inboundShippedQuantity,
-    inboundReceivingQuantity,
-    reservedQuantity,
+            if ((int)obj["totalQuantity"] == 0
+                || asin == "B0CBQHLCWS"
+                || asin == "B08G9NLFGC"
+                || asin == "B0CND1P9YD")
+            {
+                continue;
+            }
 
-    detectionReason);
+            int availableQuantity =
+                (int)obj["inventoryDetails"]["fulfillableQuantity"];
+
+            int inboundShippedQuantity =
+                (int)obj["inventoryDetails"]["inboundShippedQuantity"];
+
+            int inboundReceivingQuantity =
+                (int)obj["inventoryDetails"]["inboundReceivingQuantity"];
+
+            int reservedQuantity =
+                (int)obj["inventoryDetails"]
+                    ["reservedQuantity"]
+                    ["totalReservedQuantity"];
+
+            bool existInAsinToSku =
+                ExistInAsinToSku(asin, storeId);
+
+            if (existInAsinToSku)
+            {
+                if (previousInventory.TryGetValue(
+                        asin,
+                        out FbaInventorySnapshot previous))
+                {
+                    int availableIncrease =
+                        availableQuantity - previous.AvailableQty;
+
+                    bool hasRecentRelevantStockPurchase =
+                        HasRecentRelevantStockPurchase(
+                            storeId,
+                            marketPlace,
+                            asin);
+
+                    bool lowStockRecovery =
+                        previous.AvailableQty < 50
+                        && availableIncrease >= 20;
+
+                    bool significantStockIncrease =
+                        availableIncrease >= 50;
+
+                    bool shouldCreateAlert =
+                        hasRecentRelevantStockPurchase
+                        && availableQuantity > previous.AvailableQty
+                        && (
+                            lowStockRecovery
+                            || significantStockIncrease
+                        );
+
+                    if (shouldCreateAlert)
+                    {
+                        string detectionReason =
+                            lowStockRecovery
+                                ? "LowStockRecovery"
+                                : "SignificantStockIncrease";
+
+                        TryCreateFbaReceivingAlert(
+                            storeId,
+                            marketPlace,
+                            asin,
+
+                            previous.AvailableQty,
+                            previous.InboundShippedQty,
+                            previous.InboundReceivingQty,
+                            previous.ReservedQty,
+
+                            availableQuantity,
+                            inboundShippedQuantity,
+                            inboundReceivingQuantity,
+                            reservedQuantity,
+
+                            detectionReason);
+                    }
+                }
+
+                AddInventoryToKT(
+                    asin,
+                    availableQuantity,
+                    inboundShippedQuantity,
+                    inboundReceivingQuantity,
+                    reservedQuantity,
+                    marketPlace,
+                    storeId);
+            }
         }
+
+        return true;
     }
+    catch (Exception e)
+    {
+        UtilityMethods.WriteToTextLog(
+            storeName + " EXCEPTION in loopInventory-",
+            "ERR");
 
-    AddInventoryToKT(
-        asin,
-        availableQuantity,
-        inboundShippedQuantity,
-        inboundReceivingQuantity,
-        reservedQuantity,
-        marketPlace,
-        storeId);
+        UtilityMethods.SendErrMail(
+            storeName + " EXCEPTION in loopInventory" + e.Message);
+
+        Console.WriteLine(
+            storeName
+            + " EXCEPTION in loopInventory-"
+            + UtilityMethods.IsraelDateTime());
+
+        UtilityMethods.WriteToTextLog(
+            e.Message,
+            "ERR");
+
+        return false;
+    }
 }
-              
-            }
-
-             return true;
-           }
-          catch( Exception e){
-          UtilityMethods.WriteToTextLog(
-                    storeName+" EXCEPTION in loopInventory-","ERR");
-UtilityMethods.SendErrMail(storeName+" EXCEPTION in loopInventory" + e.Message);
-                    Console.WriteLine
-                    (storeName+" EXCEPTION in loopInventory-" + UtilityMethods.IsraelDateTime());
-          UtilityMethods.WriteToTextLog(e.Message,"ERR");
-                    return false;
-            }
-      }
 ///////////////////////////////////////////////////////////////////
 private static void TryCreateFbaReceivingAlert(
     int storeId,
@@ -959,6 +987,57 @@ private static Dictionary<string, FbaInventorySnapshot> GetPreviousFbaInventory(
     }
 
     return result;
+}
+private static bool HasRecentRelevantStockPurchase(
+    int storeId,
+    string marketplace,
+    string asin)
+{
+    const string sql = @"
+        SELECT CASE
+            WHEN EXISTS
+            (
+                SELECT 1
+                FROM dbo.AAmzStockPurchase
+                WHERE StoreId = @StoreId
+                  AND MarketPlace = @Marketplace
+                  AND ProductAsin = @Asin
+                  AND InboundUpdated = 1
+                  AND DateReceived > '0001-01-01'
+                  AND DateReceived >= DATEADD(DAY, -90, @CurrentDate)
+            )
+            THEN 1
+            ELSE 0
+        END;";
+
+    using (SqlConnection connection =
+           new SqlConnection(SD.connectionStr))
+    using (SqlCommand command =
+           new SqlCommand(sql, connection))
+    {
+        command.Parameters.Add(
+            "@StoreId",
+            SqlDbType.Int).Value = storeId;
+
+        command.Parameters.Add(
+            "@Marketplace",
+            SqlDbType.NVarChar,
+            3).Value = marketplace;
+
+        command.Parameters.Add(
+            "@Asin",
+            SqlDbType.NVarChar,
+            20).Value = asin;
+
+        command.Parameters.Add(
+            "@CurrentDate",
+            SqlDbType.DateTime2).Value =
+            UtilityMethods.IsraelDateTime();
+
+        connection.Open();
+
+        return Convert.ToInt32(command.ExecuteScalar()) == 1;
+    }
 }
 private sealed class FbaInventorySnapshot
 {
