@@ -313,58 +313,90 @@ previousInventory);
             if (existInAsinToSku)
             {
                 if (previousInventory.TryGetValue(
-                        asin,
-                        out FbaInventorySnapshot previous))
-                {
-                    int availableIncrease =
-                        availableQuantity - previous.AvailableQty;
+        asin,
+        out FbaInventorySnapshot previous))
+{
+    int availableIncrease =
+        availableQuantity - previous.AvailableQty;
 
-                    bool hasRecentRelevantStockPurchase =
-                        HasRecentRelevantStockPurchase(
-                            storeId,
-                            marketPlace,
-                            asin);
+    bool hasRecentRelevantStockPurchase =
+        HasRecentRelevantStockPurchase(
+            storeId,
+            marketPlace,
+            asin);
 
-                    bool lowStockRecovery =
-                        previous.AvailableQty < 50
-                        && availableIncrease >= 20;
+    bool lowStockRecovery =
+        previous.AvailableQty < 50
+        && availableIncrease >= 20;
 
-                    bool significantStockIncrease =
-                        availableIncrease >= 50;
+    bool significantStockIncrease =
+        availableIncrease >= 50;
 
-                    bool shouldCreateAlert =
-                        hasRecentRelevantStockPurchase
-                        && availableQuantity > previous.AvailableQty
-                        && (
-                            lowStockRecovery
-                            || significantStockIncrease
-                        );
+    bool shouldCreateAlert =
+        hasRecentRelevantStockPurchase
+        && availableQuantity > previous.AvailableQty
+        && (
+            lowStockRecovery
+            || significantStockIncrease
+        );
 
-                    if (shouldCreateAlert)
-                    {
-                        string detectionReason =
-                            lowStockRecovery
-                                ? "LowStockRecovery"
-                                : "SignificantStockIncrease";
+    if (shouldCreateAlert)
+    {
+        string detectionReason =
+            lowStockRecovery
+                ? "LowStockRecovery"
+                : "SignificantStockIncrease";
 
-                        TryCreateFbaReceivingAlert(
-                            storeId,
-                            marketPlace,
-                            asin,
+        TryCreateFbaReceivingAlert(
+            storeId,
+            marketPlace,
+            asin,
 
-                            previous.AvailableQty,
-                            previous.InboundShippedQty,
-                            previous.InboundReceivingQty,
-                            previous.ReservedQty,
+            previous.AvailableQty,
+            previous.InboundShippedQty,
+            previous.InboundReceivingQty,
+            previous.ReservedQty,
 
-                            availableQuantity,
-                            inboundShippedQuantity,
-                            inboundReceivingQuantity,
-                            reservedQuantity,
+            availableQuantity,
+            inboundShippedQuantity,
+            inboundReceivingQuantity,
+            reservedQuantity,
 
-                            detectionReason);
-                    }
-                }
+            detectionReason);
+    }
+}
+else
+{
+    bool hasRecentRelevantStockPurchase =
+        HasRecentRelevantStockPurchase(
+            storeId,
+            marketPlace,
+            asin);
+
+    bool firstFbaStockAvailable =
+        hasRecentRelevantStockPurchase
+        && availableQuantity >= 30;
+
+    if (firstFbaStockAvailable)
+    {
+        TryCreateFbaReceivingAlert(
+            storeId,
+            marketPlace,
+            asin,
+
+            0,
+            0,
+            0,
+            0,
+
+            availableQuantity,
+            inboundShippedQuantity,
+            inboundReceivingQuantity,
+            reservedQuantity,
+
+            "FirstFbaStockAvailable");
+    }
+}
 
                 AddInventoryToKT(
                     asin,
@@ -1004,7 +1036,7 @@ private static bool HasRecentRelevantStockPurchase(
                   AND ProductAsin = @Asin
                   AND InboundUpdated = 1
                   AND DateReceived > '0001-01-01'
-                  AND DateReceived >= DATEADD(DAY, -90, @CurrentDate)
+                  AND DateReceived >= DATEADD(DAY, -180, @CurrentDate)
             )
             THEN 1
             ELSE 0
